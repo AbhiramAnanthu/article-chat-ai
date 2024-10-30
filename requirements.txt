@@ -1,0 +1,7 @@
+beautifulSoup4
+requests
+langchain
+langchain-google-genai
+python-dotenv
+langchain-mongodb
+pymongo
