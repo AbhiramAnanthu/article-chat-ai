@@ -3,8 +3,9 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.documents import Document
 from pymongo import MongoClient
 from langchain_mongodb.vectorstores import MongoDBAtlasVectorSearch
-from langchain_core.runnables import RunnablePassthrough
-from langchain.prompts import PromptTemplate
+from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain.chains.retrieval import create_retrieval_chain
+from langchain.prompts import ChatPromptTemplate
 from dotenv import load_dotenv
 import os
 
@@ -40,31 +41,32 @@ class LLMIntegration:
         try:
             with open(path, "r", encoding="utf-8") as file:
                 text = file.read()
-                start_token = 0
-                end_token = tokens // 3
-                documents = []
-                while start_token < tokens:
-                    documents.append(Document(page_content=text[start_token:end_token]))
-                    start_token = end_token
-                    end_token += tokens // 3
+                documents = [Document(page_content=text)]
                 self.vector_store.add_documents(documents)
                 return documents
         except FileNotFoundError as e:
             print(e)
 
     def createRAG(self):
-        # retriever = self.vector_store.as_retriever()
-        # prompt = PromptTemplate.from_template("{text}")
-        # embeddings = self.createEmbeddings("article.txt", 3394)
-        # #context =
-        # #formatted_context = self.format_docs(context)
-        # messages = [
-        #     ("system", "Use the provided documents to answer the following question."),
-        #     ("context", formatted_context),
-        #     ("human", "what kind of neural network is implemented here"),
-        # ]
-        # ai_msg = self.llm.invoke(messages)
-        # print(ai_msg)
+        retriever = self.vector_store.as_retriever()
+        system_message = (
+            "You are coding assistant."
+            "Use the following retrieval content to answer to the prompt."
+            "If you don't know the answer. So i am not able to answer the question"
+            "\n\n"
+            "{context}"
+        )
+        prompt = ChatPromptTemplate.from_messages(
+            [("system", system_message), ("human", "{input}")]
+        )
+        question_answer_chain_rag = create_stuff_documents_chain(self.llm, prompt)
+        rag_chain = create_retrieval_chain(retriever, question_answer_chain_rag)
+        response = rag_chain.invoke(
+            {
+                "input": "What kind of neural network is implemented here. I mean what is the example show here ?"
+            }
+        )
+        print(response["answer"])
 
 
 integrate = LLMIntegration()
