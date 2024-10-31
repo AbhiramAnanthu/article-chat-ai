@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from exceptionHandling import ElementNotFoundException
+from backend.exceptionHandling import ElementNotFoundException
 import re
 
 
@@ -48,8 +48,3 @@ class DataExtractor:
         except FileNotFoundError as e:
             print(f"File not found: {e}")
 
-
-extractor = DataExtractor()
-extractor.scrape("https://iamtrask.github.io/2015/07/12/basic-python-network/")
-extractor.cleaning("article.txt")
-extractor.tokens("article.txt")
