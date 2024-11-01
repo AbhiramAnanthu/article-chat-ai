@@ -1,11 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
-from backend.exceptionHandling import ElementNotFoundException
+from exceptionHandling import ElementNotFoundException
 import re
 
 
 class DataExtractor:
-    def scrape(self, url: str):
+    def scrape(self, url: str, file_path: str):
         try:
             response = requests.get(url)
             response.raise_for_status()
@@ -17,8 +17,9 @@ class DataExtractor:
             except ElementNotFoundException as e:
                 element = soup.select_one("body")
             try:
-                with open("article.txt", "w", encoding="utf-8") as file:
+                with open(file_path, "w", encoding="utf-8") as file:
                     file.write(element.text)
+                return file_path
             except IOError as e:
                 print(f"Error: {e}")
         except requests.exceptions.HTTPError as e:
@@ -34,6 +35,7 @@ class DataExtractor:
                 try:
                     with open(file_path, "w", encoding="utf-8") as file:
                         file.writelines(newLines)
+                    return file_path
                 except FileNotFoundError as e:
                     print(f"File not found: {e}")
         except FileNotFoundError as e:
@@ -47,4 +49,3 @@ class DataExtractor:
                 return len(tokens)
         except FileNotFoundError as e:
             print(f"File not found: {e}")
-
