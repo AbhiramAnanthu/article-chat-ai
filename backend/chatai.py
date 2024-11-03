@@ -12,6 +12,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 from pymongo.operations import SearchIndexModel
 from typing import Mapping, Any
 from dotenv import load_dotenv
+from .scrapper import *
 import os
 
 path = "D:/article-chat-ai/.env"
@@ -50,37 +51,6 @@ class LLMIntegration:
         except Exception as e:
             print(f"Error initializing MongoDB: {e}")
 
-    def handle_embeddings(self, collection_name, content, index_name):
-        db = self.dbclient["article-embeddings"]
-        collection = db[collection_name]
-        vector_store = None
-        try:
-            if collection:
-                if self._index_exists(collection, index_name):
-                    vector_store = self._initialize_vector_store(collection, index_name)
-                else:
-                    print("Index does not exist")
-            else:
-                collection = db.create_collection(collection_name)
-                self._create_search_index(collection, index_name)
-                vector_store = self._initialize_vector_store(collection, index_name)
-                self._add_document_to_vector_store(vector_store, content)
-        except Exception as e:
-            print(e)
-        return vector_store
-
-    def _index_exists(self, collection, index_name):
-        indexes = collection.index_information()
-        return any(index["name"] == index_name for index in indexes)
-
-    def _initialize_vector_store(self, collection, index_name):
-        return MongoDBAtlasVectorSearch(
-            collection=collection,
-            embedding=self.embeddings,
-            index_name=index_name,
-            relevance_score_fn="cosine",
-        )
-
     def _create_search_index(self, collection, index_name):
         search_index_model = SearchIndexModel(
             definition={
@@ -97,15 +67,6 @@ class LLMIntegration:
             type="vectorSearch",
         )
         collection.create_search_index(model=search_index_model)
-
-    def _add_document_to_vector_store(self, vector_store, content):
-        with tempfile.NamedTemporaryFile(delete=True) as temp_file:
-            temp_file.write(content.encode("utf-8"))
-            temp_file.flush()
-            with open(temp_file.name, "r", encoding="utf-8") as file:
-                text = file.read()
-                document = [Document(page_content=text)]
-                vector_store.add_documents(document)
 
     def chat(
         self, input: str, chat_history: list, vector_store: MongoDBAtlasVectorSearch
@@ -153,6 +114,6 @@ class LLMIntegration:
             chat_history.extend(
                 [HumanMessage(content=input), AIMessage(content=response["answer"])]
             )
-            print(f"AI: {response['answer']}")
+            return response["answer"]
         except Exception as e:
             print(f"Error creating RAG chain: {e}")
