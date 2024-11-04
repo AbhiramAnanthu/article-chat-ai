@@ -3,6 +3,5 @@ requests
 langchain
 langchain-google-genai
 python-dotenv
-langchain-mongodb
-pymongo
 streamlit
+langchain-pinecone
