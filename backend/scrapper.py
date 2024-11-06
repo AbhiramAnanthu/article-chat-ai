@@ -1,9 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
 from .exceptionHandling import ElementNotFoundException
-import re
-import tempfile
-import os
 
 
 class DataExtractor:

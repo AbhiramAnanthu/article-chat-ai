@@ -28,8 +28,6 @@ class ChatAI:
             google_api_key=os.getenv("GOOGLE_API_KEY"),
         )
 
-        self._initialize_vectore_store()
-
     def _initialize_llm(self):
         try:
             self.llm = ChatGoogleGenerativeAI(
@@ -44,41 +42,38 @@ class ChatAI:
         except Exception as e:
             print(e)
 
-    def _initialize_vectore_store(self):
-        try:
-            self.vectore_store = PineconeVectorStore(
-                index=self.index, embedding=self.embedding
-            )
-        except Exception as e:
-            print(e)
-
     def generate_id(self, url):
         url_hash = hashlib.sha256(url.encode()).digest()
 
         url_id = base64.urlsafe_b64encode(url_hash).decode()[:20]
         return url_id
 
-    def create_embeddings(self, url):
+    def handle_embeddings(self, url):
         id = self.generate_id(url)
         article = self.index.fetch([id])
-        print("0")
         if not article or "vectors" not in article or len(article["vectors"]) == 0:
-            print("1")
             content = ScrapeInterface(url=url)
             document = [
                 Document(page_content=content.scrape_and_clean(), metadata={"url": url})
             ]
 
             try:
-                self.vectore_store.add_documents(documents=document, ids=[id])
-                print(f"Document for URL {url} added with ID {id}")
+                vector_store = PineconeVectorStore(
+                    index=self.index, embedding=self.embedding, namespace=id
+                )
+                vector_store.add_documents(document, ids=[id])
+                return vector_store
             except Exception as e:
                 print(f"Error adding document: {e}")
         else:
-            print(f"Document for URL {url} already exists with ID {id}")
+            vector_store = PineconeVectorStore(
+                index=self.index,
+                embedding=self.embedding,
+                namespace=article["namespace"],
+            )
 
-    def chat(self, prompt, chat_history):
-        retriever = self.vectore_store.as_retriever()
+    def chat(self, prompt, chat_history, vector_store):
+        retriever = vector_store.as_retriever()
         contextualize_q_system_prompt = (
             "Given a chat history and the latest user question "
             "which might reference context in the chat history, "

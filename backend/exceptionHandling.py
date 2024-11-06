@@ -1,2 +1,2 @@
 class ElementNotFoundException(Exception):
-    pass
+    print("ElementNotFoundException: Unable to scrape the website")

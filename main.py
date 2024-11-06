@@ -1,5 +1,6 @@
 from backend.chatai import *
 import streamlit as st
+from urllib.parse import urlparse
 
 
 class Interface:
@@ -8,26 +9,36 @@ class Interface:
 
     def run(self, prompt, chat_history):
         ai = ChatAI()
-        id = ai.generate_id(url=self.url)
-        article = ai.index.fetch([id])
 
-        if not article or "vectors" not in article or len(article["vectors"]) == 0:
-            ai.create_embeddings(self.url)
+        vector_store = ai.handle_embeddings(self.url)
 
-        response = ai.chat(prompt, chat_history)
+        response = ai.chat(prompt, chat_history, vector_store)
         return response
 
 
+class ChatHistory:
+    def __init__(self, article_name, url) -> None:
+        self.chat_history = []
+        self.article_name = article_name
+        self.url = url
+
+    def load_chat_history(self):
+        st.write(self.chat_history)
+
+
 def main():
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
     with st.container():
         url = st.text_input("Article url", placeholder="www.skibiddi.com/article/1")
+        article_name = urlparse(url).netloc
+        if article_name not in st.session_state:
+            st.session_state[article_name] = ChatHistory(article_name, url)
         if url:
             interface = Interface(url=url)
-            prompt = st.chat_input("Enter your prompt")
+            prompt = st.chat_input("Enter your prompt", key="prompt_input")
             if prompt:
-                st.markdown(interface.run(prompt, st.session_state.chat_history))
-
+                response = interface.run(
+                    prompt, st.session_state[article_name].chat_history
+                )
+                st.markdown(response)
 
 main()
