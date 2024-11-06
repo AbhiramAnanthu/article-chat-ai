@@ -22,9 +22,6 @@ class ChatHistory:
         self.article_name = article_name
         self.url = url
 
-    def load_chat_history(self):
-        st.write(self.chat_history)
-
 
 def main():
     with st.container():
@@ -33,12 +30,17 @@ def main():
         if article_name not in st.session_state:
             st.session_state[article_name] = ChatHistory(article_name, url)
         if url:
-            interface = Interface(url=url)
-            prompt = st.chat_input("Enter your prompt", key="prompt_input")
-            if prompt:
-                response = interface.run(
-                    prompt, st.session_state[article_name].chat_history
-                )
-                st.markdown(response)
+            ai = ChatAI()
+            vector_store = ai.handle_embeddings(url)
+            if vector_store is not None:
+                prompt = st.chat_input("Enter your prompt", key="prompt_input")
+                if prompt:
+                    response = ai.chat(
+                        prompt,
+                        st.session_state[article_name].chat_history,
+                        vector_store,
+                    )
+                    st.markdown(response)
+
 
 main()
