@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import os
 import hashlib
 import base64
+import asyncio
 
 load_dotenv(dotenv_path="d:/article-chat-ai/.env")
 
@@ -51,6 +52,7 @@ class ChatAI:
     def handle_embeddings(self, url):
         id = self.generate_id(url)
         article = self.index.fetch([id])
+        vector_store = None
         if not article or "vectors" not in article or len(article["vectors"]) == 0:
             content = ScrapeInterface(url=url)
             document = [
@@ -62,7 +64,6 @@ class ChatAI:
                     index=self.index, embedding=self.embedding, namespace=id
                 )
                 vector_store.add_documents(document, ids=[id])
-                return vector_store
             except Exception as e:
                 print(f"Error adding document: {e}")
         else:
@@ -71,6 +72,7 @@ class ChatAI:
                 embedding=self.embedding,
                 namespace=article["namespace"],
             )
+        return vector_store
 
     def chat(self, prompt, chat_history, vector_store):
         retriever = vector_store.as_retriever()
