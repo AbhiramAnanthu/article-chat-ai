@@ -74,7 +74,11 @@ class ChatAI:
             )
         return vector_store
 
-    def chat(self, prompt, chat_history, vector_store):
+    def chat(self, prompt: str, chat_history, vector_store: PineconeVectorStore):
+        similarity_score = vector_store.similarity_search_with_score(prompt)[0][1]
+        print(similarity_score)
+        if similarity_score < 0.4000:
+            return None
         retriever = vector_store.as_retriever()
         contextualize_q_system_prompt = (
             "Given a chat history and the latest user question "
@@ -90,6 +94,7 @@ class ChatAI:
             "the question. If you don't know the answer, say that you "
             "don't know. Use three sentences maximum and keep the "
             "answer concise."
+            "Don't go beyond the scope of the context."
             "\n\n"
             "{context}"
         )

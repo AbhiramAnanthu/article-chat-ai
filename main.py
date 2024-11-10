@@ -40,7 +40,13 @@ def main():
                         st.session_state[article_name].chat_history,
                         vector_store,
                     )
-                    st.markdown(response)
+                    print(response)
+                    if response is not None:
+                        st.markdown(response)
+                    else:
+                        st.markdown(
+                            "You are asking questions beyond the scope of the article."
+                        )
 
 
 main()
